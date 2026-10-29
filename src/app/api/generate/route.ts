@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { resolveAi, streamPost, type GenerationSource } from "@/lib/ai";
+import { describeAiError, resolveAi, streamPost, type GenerationSource } from "@/lib/ai";
 import { decrypt } from "@/lib/crypto";
 import { db, schema } from "@/lib/db";
 import { getRepoContext } from "@/lib/github";
@@ -80,8 +80,38 @@ export async function POST(req: Request) {
       direction: b.direction,
       author: user.name ?? user.login,
     });
-    return result.toTextStreamResponse();
+    // Wait for the first event so a bad key or model comes back as a readable error
+    // instead of an empty 200 stream.
+    const events = result.fullStream[Symbol.asyncIterator]();
+    let first = "";
+    for (;;) {
+      const { done, value } = await events.next();
+      if (done) break;
+      if (value.type === "error") return fail(describeAiError(value.error, ai), 502);
+      if (value.type === "text-delta" && value.text) {
+        first = value.text;
+        break;
+      }
+    }
+
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        if (first) controller.enqueue(encoder.encode(first));
+      },
+      async pull(controller) {
+        for (;;) {
+          const { done, value } = await events.next();
+          if (done || value.type === "error") return controller.close();
+          if (value.type === "text-delta" && value.text) return controller.enqueue(encoder.encode(value.text));
+        }
+      },
+      async cancel() {
+        await events.return?.();
+      },
+    });
+    return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
   } catch (err) {
-    return fail(err instanceof Error ? err.message : "Generation failed.", 500);
+    return fail(describeAiError(err, ai), 500);
   }
 }

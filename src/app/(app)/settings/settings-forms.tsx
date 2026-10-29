@@ -5,7 +5,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { disconnectAction, saveAiSettingsAction } from "@/app/actions";
 import { useToast } from "@/components/toast";
 
-type Provider = { id: string; name: string; defaultModel: string; note: string };
+type Provider = { id: string; name: string; defaultModel: string; note: string; keyUrl: string };
 
 export function Flash({ tone, text }: { tone: "success" | "error"; text: string }) {
   return (
@@ -46,7 +46,7 @@ export function AiSettingsForm({
           {providers.map((p) => (
             <label
               key={p.id}
-              className={`relative flex cursor-pointer flex-col rounded-[12px] border px-4 py-3 transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-tempo ${
+              className={`relative flex cursor-pointer flex-col rounded-[12px] sm:last:odd:col-span-2 border px-4 py-3 transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-tempo ${
                 provider === p.id ? "border-tempo bg-tempo-soft/40" : "border-line hover:border-ink-2/30"
               }`}
             >
@@ -80,7 +80,9 @@ export function AiSettingsForm({
           autoComplete="off"
           spellCheck={false}
         />
-        <p className="mt-1 text-sm text-mute">Default for {info.name}: {info.defaultModel}</p>
+        {info.defaultModel && (
+          <p className="mt-1 text-sm text-mute">Default for {info.name}: {info.defaultModel}</p>
+        )}
       </div>
       <div>
         <label className="field-label" htmlFor="apiKey">
@@ -95,6 +97,13 @@ export function AiSettingsForm({
           className="field"
           placeholder={keySaved ? "Saved. Leave blank to keep it." : "Paste your API key…"}
         />
+        {info.keyUrl && (
+          <p className="mt-1 text-sm text-mute">
+            <a href={info.keyUrl} target="_blank" rel="noopener noreferrer" className="text-tempo underline-offset-2 hover:underline">
+              Get a {info.name} key
+            </a>
+          </p>
+        )}
       </div>
       {provider === "openai-compatible" && (
         <div className="sm:col-span-2">
@@ -108,7 +117,7 @@ export function AiSettingsForm({
             inputMode="url"
             className="field"
             defaultValue={current?.baseUrl ?? ""}
-            placeholder="https://api.groq.com/openai/v1…"
+            placeholder="https://openrouter.ai/api/v1…"
             spellCheck={false}
           />
         </div>

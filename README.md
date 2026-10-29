@@ -8,7 +8,7 @@ Keep a steady posting rhythm without living in the feed. Cadence drafts posts fr
 - **Streaming AI drafts.** Drafts appear in the editor as they are written. Stop at any point, edit by hand, or draft again.
 - **Threads.** Write single posts or X threads. Each part has its own character ring, and LinkedIn gets the parts joined into one post.
 - **Voices.** Reusable style rules (tone, length, words to avoid, how to end) that the AI follows. Three starter voices are created on first sign-in; one is your default.
-- **Bring your own AI.** Google Gemini (has a free tier), OpenAI, Anthropic, or any OpenAI-compatible API (Groq, OpenRouter, Ollama…). Keys are encrypted at rest. A server-wide fallback key is optional.
+- **Bring your own AI.** Google Gemini and Groq (both have free tiers, and only need an API key), OpenAI, Anthropic, or any OpenAI-compatible API (OpenRouter, Together, Ollama…). Keys are encrypted at rest. A server-wide fallback key is optional.
 - **Week board scheduler.** See the week at a glance with a live "now" marker. Drag drafts onto a day to schedule them, drag posts between days to reschedule (with Undo), and track a weekly posting goal.
 - **Queue views.** Coming up, Drafts, Needs attention (failed posts with the platform error and a Retry button) and Published, with links to the live posts.
 - **Previews.** See how a post or thread will look on X or LinkedIn before it goes out.

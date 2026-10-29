@@ -2,7 +2,7 @@ import "server-only";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, type LanguageModel } from "ai";
+import { APICallError, RetryError, streamText, type LanguageModel } from "ai";
 import type { AiSettings } from "./db/schema";
 import { decrypt } from "./crypto";
 import { env } from "./env";
@@ -12,16 +12,38 @@ import type { PlatformAdapter } from "./platforms";
 import { POST_KINDS } from "./post-options";
 
 export const AI_PROVIDERS = [
-  { id: "google", name: "Google Gemini", defaultModel: "gemini-2.5-flash", note: "Free tier available." },
-  { id: "openai", name: "OpenAI", defaultModel: "gpt-5-mini", note: "" },
-  { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-haiku-4-5", note: "" },
+  {
+    id: "google",
+    name: "Google Gemini",
+    defaultModel: "gemini-2.5-flash",
+    note: "Free tier available.",
+    keyUrl: "https://aistudio.google.com/apikey",
+  },
+  {
+    id: "groq",
+    name: "Groq",
+    defaultModel: "llama-3.3-70b-versatile",
+    note: "Free tier, very fast.",
+    keyUrl: "https://console.groq.com/keys",
+  },
+  { id: "openai", name: "OpenAI", defaultModel: "gpt-5-mini", note: "", keyUrl: "https://platform.openai.com/api-keys" },
+  {
+    id: "anthropic",
+    name: "Anthropic Claude",
+    defaultModel: "claude-haiku-4-5",
+    note: "",
+    keyUrl: "https://console.anthropic.com/settings/keys",
+  },
   {
     id: "openai-compatible",
-    name: "OpenAI-compatible (Groq, OpenRouter, Ollama)",
-    defaultModel: "llama-3.3-70b-versatile",
-    note: "Groq has a free tier: https://api.groq.com/openai/v1",
+    name: "OpenAI-compatible",
+    defaultModel: "",
+    note: "OpenRouter, Together, Ollama or any /v1 API.",
+    keyUrl: "",
   },
 ] as const;
+
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 export type AiProviderId = (typeof AI_PROVIDERS)[number]["id"];
 
@@ -45,6 +67,19 @@ export function resolveAi(settings: AiSettings | undefined): ResolvedAi | null {
   return null;
 }
 
+/** Turns a provider failure into something the user can act on in Settings. */
+export function describeAiError(error: unknown, ai: { provider: string; model: string }) {
+  const err = RetryError.isInstance(error) ? error.lastError : error;
+  const name = AI_PROVIDERS.find((p) => p.id === ai.provider)?.name ?? "The AI provider";
+  if (APICallError.isInstance(err)) {
+    if (err.statusCode === 401 || err.statusCode === 403) return `${name} rejected the API key. Check it in Settings.`;
+    if (err.statusCode === 404) return `${name} doesn't know the model "${ai.model}". Check the model name in Settings.`;
+    if (err.statusCode === 429) return `${name} is rate limiting this key. Wait a minute and try again.`;
+    return `${name} returned an error: ${err.message}`;
+  }
+  return err instanceof Error ? err.message : "Generation failed. Try again.";
+}
+
 function languageModel({ provider, model, apiKey, baseUrl }: ResolvedAi): LanguageModel {
   switch (provider) {
     case "openai":
@@ -53,6 +88,8 @@ function languageModel({ provider, model, apiKey, baseUrl }: ResolvedAi): Langua
       return createAnthropic({ apiKey })(model);
     case "google":
       return createGoogle({ apiKey })(model);
+    case "groq":
+      return createOpenAI({ apiKey, baseURL: GROQ_BASE_URL }).chat(model);
     case "openai-compatible":
       if (!baseUrl) throw new Error("OpenAI-compatible provider needs a base URL");
       return createOpenAI({ apiKey, baseURL: baseUrl }).chat(model);

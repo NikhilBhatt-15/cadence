@@ -202,7 +202,7 @@ export async function deletePromptAction(promptId: string) {
 // ---------- Settings ----------
 
 const aiSchema = z.object({
-  provider: z.enum(["google", "openai", "anthropic", "openai-compatible"]),
+  provider: z.enum(["google", "groq", "openai", "anthropic", "openai-compatible"]),
   model: z.string().trim().min(1, "Enter a model name.").max(200),
   apiKey: z.string().trim().max(500),
   baseUrl: z.url("Base URL must be a full URL.").optional().or(z.literal("")),
