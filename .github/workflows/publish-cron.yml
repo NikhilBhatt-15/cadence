@@ -1,0 +1,24 @@
+name: Publish scheduled posts
+
+# Vercel's free plan only allows daily cron jobs, so GitHub Actions pings the
+# publish endpoint instead. GitHub may delay scheduled runs by a few minutes.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Trigger publisher
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets not set; skipping."
+            exit 0
+          fi
+          curl --fail-with-body -sS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/publish"
