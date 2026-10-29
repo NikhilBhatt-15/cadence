@@ -7,6 +7,12 @@ const ERRORS: Record<string, string> = {
   oauth_state: "That sign-in link expired. Sign in again.",
   github_token: "GitHub didn't finish signing you in. Try again.",
   github_profile: "Couldn't read your GitHub profile. Try again in a minute.",
+  github_denied: "GitHub sign-in was cancelled.",
+  github_config: "GitHub sign-in isn't set up on this server: GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET is missing.",
+  github_secret: "GitHub rejected the app's credentials. Check GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.",
+  server_config: "The server is missing SESSION_SECRET, ENCRYPTION_KEY or DATABASE_URL.",
+  db_tables: "The database has no tables yet. Run npm run db:push against it.",
+  db_connect: "Signed in with GitHub, but the database couldn't be reached. Check DATABASE_URL.",
 };
 
 const STEPS = [
